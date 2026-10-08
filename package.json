@@ -1,0 +1,98 @@
+{
+  "name": "storylab-desktop",
+  "productName": "StoryLab",
+  "version": "1.0.0",
+  "description": "StoryLab — créer des histoires interactives Déclic sans savoir coder, puis les envoyer à l'équipe pour publication (famille ClassPro)",
+  "main": "src/main/main.js",
+  "author": {
+    "name": "Lucas Le Coadou",
+    "email": "lucas.le-coadou@ac-montpellier.fr"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "build:renderer": "node scripts/build.mjs",
+    "build:phone": "node scripts/phone.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "serve": "node scripts/serve.mjs",
+    "start": "npm run build:renderer && electron .",
+    "dev": "npm run build:renderer && electron . --dev",
+    "dist:mac": "npm run build:renderer && electron-builder --mac --publish never",
+    "dist:win": "npm run build:renderer && electron-builder --win --publish never",
+    "dist:all": "npm run build:renderer && electron-builder --mac --win --publish never"
+  },
+  "devDependencies": {
+    "@fontsource/roboto": "^5.2.6",
+    "@fontsource/roboto-slab": "^5.2.6",
+    "electron": "^41.10.7",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "build": {
+    "appId": "fr.lucaslecoadou.storylab",
+    "productName": "StoryLab",
+    "copyright": "© 2026 Lucas Le Coadou",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/main/**/*",
+      "src/renderer/index.html",
+      "src/renderer/dist/**/*",
+      "phone/**/*",
+      "assets/icon.png",
+      "package.json"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "declic",
+        "name": "Histoire Déclic",
+        "description": "Histoire Déclic (StoryLab)",
+        "role": "Editor"
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.education",
+      "artifactName": "StoryLab-${version}-${arch}.${ext}",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "StoryLab utilise le micro uniquement quand vous enregistrez un message vocal ou un récit pour votre histoire."
+      }
+    },
+    "dmg": {
+      "title": "StoryLab ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "StoryLab-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "StoryLab",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
