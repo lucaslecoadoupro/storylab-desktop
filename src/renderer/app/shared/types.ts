@@ -58,6 +58,41 @@ export interface Content {
   alt?: string;
 }
 
+/**
+ * Effets du téléphone : ils rendent une conséquence visible et physique.
+ * - `capture` : flash et vignette de capture d'écran (la capture s'ajoute à Photos) ;
+ * - `hack` : le téléphone se fait pirater (écran qui glitche, alerte) ;
+ * - `storm` : tempête de notifications ;
+ * - `ghost` : message fantôme (message seulement) : il est supprimé sous les yeux
+ *   de l'élève puis revient en capture d'écran envoyée par `by` ;
+ * - `crack` : une fissure traverse l'écran quelques instants ;
+ * - `freeze` : (choix seulement) le téléphone se fige 2 s quand l'élève choisit,
+ *   devient gris et affiche `text`, puis le choix s'applique.
+ */
+export type EffectType = 'capture' | 'hack' | 'storm' | 'ghost' | 'crack' | 'freeze';
+export const EFFECT_TYPES: EffectType[] = ['capture', 'hack', 'storm', 'ghost', 'crack', 'freeze'];
+
+export interface PhoneEffect {
+  type: EffectType;
+  /** Piratage : texte de l'alerte. Figé : phrase affichée sur l'écran gris. Tempête : textes (une ligne par notification). */
+  text?: string;
+  /** Tempête : nombre de notifications (12 par défaut). */
+  count?: number;
+  /** Tempête, piratage : appli concernée (Pixa par défaut). */
+  app?: string;
+  /** Message fantôme : personnage qui renvoie la capture d'écran. */
+  by?: string;
+}
+
+/** Phrase par défaut du téléphone qui se fige. */
+export const FREEZE_TEXT = 'Pendant que tu hésitais, 12 personnes ont vu la publication.';
+
+/** Compte à rebours sur un choix : à zéro, le choix n° `choice` (le dernier par défaut) est fait à la place de l'élève. */
+export interface Countdown {
+  seconds: number;
+  choice?: number;
+}
+
 export interface Choice {
   label: string;
   next: string;
@@ -89,6 +124,8 @@ export interface Choice {
    * ailleurs (voir `switchTarget`) ; `false` empêche toute bascule.
    */
   open?: { app: string; thread?: string } | false;
+  /** Effet du téléphone déclenché par ce choix (fissure, piratage, téléphone figé…). */
+  effect?: PhoneEffect;
 }
 
 interface SceneBase {
@@ -108,6 +145,10 @@ interface SceneBase {
   next?: string;
   /** …ou décision de l'élève. */
   choices?: Choice[];
+  /** Effet du téléphone déclenché à l'apparition de la scène. */
+  effect?: PhoneEffect;
+  /** Compte à rebours pour décider (scène avec des choix). */
+  countdown?: Countdown;
 }
 
 export interface MessageScene extends SceneBase {
@@ -204,6 +245,11 @@ export interface EndScene extends SceneBase {
   discuss?: string[];
   /** Version audio du texte de fin (bouton « Écouter »). Sans elle, le téléphone lit le texte. */
   audio?: string;
+  /**
+   * La fin attend que l'élève ait lu au moins ce nombre de messages de
+   * l'histoire (ou tous ceux reçus, s'il y en a moins).
+   */
+  minRead?: number;
 }
 
 export type Scene =
@@ -234,4 +280,6 @@ export interface Progress {
   history: string[];
   /** Choix faits : identifiant de scène → index du choix. */
   choices: Record<string, number>;
+  /** Messages fantômes : 1 = supprimé, 2 = revenu en capture d'écran. */
+  ghosts?: Record<string, number>;
 }

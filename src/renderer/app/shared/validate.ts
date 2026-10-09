@@ -2,7 +2,9 @@
  * Validation d'un scénario. Sans dépendance : utilisée par le moteur
  * dans le navigateur et par `npm run validate` sous Node.
  */
-import type { Scenario, Scene } from './types.ts';
+import type { PhoneEffect, Scenario, Scene } from './types.ts';
+
+const EFFECTS = ['capture', 'hack', 'storm', 'ghost', 'crack', 'freeze'];
 
 const TYPES = ['message', 'publication', 'story', 'notification', 'media', 'call', 'choice', 'narration', 'end'];
 const NEEDS_APP = ['message', 'publication', 'story', 'notification'];
@@ -42,6 +44,15 @@ export function validateScenario(data: unknown, knownApps?: string[]): Validatio
   const person = (id: string | undefined, where: string) => {
     if (id && id !== 'me' && id !== 'system' && !contacts[id]) warnings.push(`${where} : contact "${id}" non déclaré dans "contacts".`);
   };
+  const effect = (e: PhoneEffect, where: string) => {
+    if (!e || !EFFECTS.includes(e.type)) { errors.push(`${where} : effet du téléphone inconnu "${e?.type}".`); return; }
+    if (e.app && knownApps && !knownApps.includes(e.app)) errors.push(`${where} : effet sur une appli inconnue "${e.app}".`);
+    if (e.type === 'ghost') {
+      if (!e.by) errors.push(`${where} : message fantôme sans personnage qui renvoie la capture ("by").`);
+      else person(e.by, where);
+    }
+    if (e.type === 'storm' && e.count !== undefined && (!Number.isInteger(e.count) || e.count < 3 || e.count > 40)) errors.push(`${where} : tempête de notifications entre 3 et 40 notifications.`);
+  };
 
   for (const scene of byId.values()) {
     const at = `Scène ${scene.id}`;
@@ -74,7 +85,29 @@ export function validateScenario(data: unknown, knownApps?: string[]): Validatio
         else if (post && post.type !== 'publication') errors.push(`${n} : effet « J’aime » sans publication visée (préciser "likes.post").`);
       }
       if (c.react && scene.type !== 'message') warnings.push(`${n} : une réaction ne s’affiche que sur un message.`);
+      if (c.effect) {
+        effect(c.effect, n);
+        if (c.effect.type === 'ghost') errors.push(`${n} : le message fantôme se règle sur une scène « message », pas sur un choix.`);
+      }
     });
+
+    if (scene.effect) {
+      effect(scene.effect, at);
+      if (scene.effect.type === 'ghost' && scene.type !== 'message') errors.push(`${at} : le message fantôme ne marche que sur une scène « message ».`);
+      if (scene.effect.type === 'ghost' && scene.type === 'message' && scene.sender === 'me') errors.push(`${at} : le message fantôme doit être envoyé par un personnage, pas par le héros.`);
+      if (scene.effect.type === 'freeze') errors.push(`${at} : le téléphone qui se fige se règle sur un choix (au moment où l’élève choisit).`);
+    }
+    if (scene.countdown) {
+      const choices = scene.choices ?? [];
+      const sec = scene.countdown.seconds;
+      if (!choices.length) errors.push(`${at} : un compte à rebours demande des choix.`);
+      if (typeof sec !== 'number' || !Number.isFinite(sec) || sec < 3) errors.push(`${at} : compte à rebours trop court ou invalide (3 secondes au moins).`);
+      const i = scene.countdown.choice;
+      if (i !== undefined && (!Number.isInteger(i) || i < 0 || i >= choices.length)) errors.push(`${at} : le compte à rebours vise un choix qui n’existe pas (n° ${Number(i) + 1}).`);
+    }
+    if (scene.type === 'end' && scene.minRead !== undefined && (!Number.isInteger(scene.minRead) || scene.minRead < 1)) {
+      errors.push(`${at} : « pas avant X messages lus » doit être un nombre entier positif.`);
+    }
 
     switch (scene.type) {
       case 'message':

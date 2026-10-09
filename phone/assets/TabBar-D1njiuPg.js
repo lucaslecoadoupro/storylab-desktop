@@ -1,0 +1,1 @@
+import{j as r}from"./index-DhLrI_cL.js";function c({tabs:n,current:s,onChange:i}){return r.jsx("nav",{className:"tabbar",children:n.map(a=>r.jsxs("button",{className:"tab","aria-current":a.id===s,onClick:()=>i(a.id),children:[a.icon,r.jsx("span",{children:a.label})]},a.id))})}export{c as T};

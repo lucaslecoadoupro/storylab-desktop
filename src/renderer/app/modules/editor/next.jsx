@@ -5,6 +5,7 @@ import { addChoice, byId, MESSAGING_APPS, removeChoice, sceneNumber, STORY_APPS,
 import { useEditor } from './context.jsx';
 import { EmojiRow, PersonSelect, TargetSelect } from './pickers.jsx';
 import { TodoText } from './media.jsx';
+import { EffectEditor } from './effects.jsx';
 
 const LETTERS = 'ABCDEFGH';
 export const choiceColor = (i) => ['#3b5bdb', '#d6336c', '#0ca678', '#f08c00', '#7048e8', '#0891b2'][i % 6];
@@ -82,7 +83,7 @@ function ChoiceCard({ scene, c, i, onCreate }) {
   const set = (fn, key) => editScenario((sc) => fn(byId(sc, scene.id).choices[i]), key);
   const isMessage = scene.type === 'message';
   const forwardable = ['message', 'publication', 'story', 'media'].includes(scene.type);
-  const effects = [c.say !== undefined, c.react, c.forward, c.capture, c.likes, c.screenOff, c.open !== undefined].filter(Boolean).length;
+  const effects = [c.say !== undefined, c.react, c.forward, c.capture, c.likes, c.screenOff, c.open !== undefined, c.effect].filter(Boolean).length;
   const publications = s.scenes.filter((x) => x.type === 'publication');
   const sayMode = c.say === false ? 'none' : typeof c.say === 'string' ? 'other' : 'label';
   const canRemove = scene.choices.length > (['choice', 'call'].includes(scene.type) ? 1 : 0);
@@ -99,7 +100,7 @@ function ChoiceCard({ scene, c, i, onCreate }) {
         <TargetSelect value={c.next} exclude={scene.id} onChange={(v) => set((ch) => { ch.next = v; })} onCreate={onCreate} />
         {c.next && <GoTo id={c.next} />}
       </div>
-      <Collapse title="Effets dans le téléphone" sub="répondre autre chose, réagir, transférer, capture…" icon="wandSparkle" count={effects}>
+      <Collapse title="Effets dans le téléphone" sub="répondre autre chose, réagir, transférer, capture, fissure, téléphone figé…" icon="wandSparkle" count={effects}>
         <div className="effects">
           {isMessage && (
             <Field label="Ce que l’élève envoie dans la conversation">
@@ -140,6 +141,7 @@ function ChoiceCard({ scene, c, i, onCreate }) {
               </div>
             </Field>
           )}
+          <EffectEditor where="choice" scene={scene} s={s} value={c.effect} onChange={(e) => set((ch) => { if (e) ch.effect = e; else delete ch.effect; }, `fx-${scene.id}-${i}`)} />
           <Switch checked={c.screenOff} onChange={(v) => set((ch) => { if (v) ch.screenOff = true; else delete ch.screenOff; })} label="L’élève éteint son téléphone" hint="Écran noir jusqu’à ce qu’il le rallume ; l’histoire reprend 15 s après." />
           <Field label="Ensuite, le téléphone…" help="Par défaut, le téléphone bascule tout seul vers l’appli où se passe la suite quand c’est l’élève qui agit (il écrit ailleurs, appelle…).">
             <div className="row">

@@ -6,6 +6,8 @@ import { useEditor } from './context.jsx';
 import { AppPicker, EmojiRow, PersonSelect } from './pickers.jsx';
 import { AudioField, ContentEditor, TodoText } from './media.jsx';
 import { NextEditor } from './next.jsx';
+import { CountdownEditor, EffectEditor } from './effects.jsx';
+import { MinReadField } from './MinReadField.jsx';
 
 /** Bloc numéroté du formulaire (« 1. Où ? »). */
 function Block({ n, title, sub, children, tour }) {
@@ -253,6 +255,9 @@ function EndFields({ sc, set }) {
       <Block n={2} title="Questions pour le débat en classe" sub="Affichées sur l’écran de fin : elles lancent la discussion.">
         <ListEditor items={sc.discuss || []} onChange={(d) => set((x) => { x.discuss = d; }, `d-${sc.id}`)} placeholder="Ex. Qu’aurais-tu fait à sa place ?" addLabel="Ajouter une question" />
       </Block>
+      <Block n={3} title="Quand afficher cette fin ?">
+        <MinReadField value={sc.minRead} onChange={(v) => set((x) => { if (v) x.minRead = v; else delete x.minRead; }, `mr-${sc.id}`)} />
+      </Block>
       <Collapse title="Version audio du texte de fin" icon="volume" count={sc.audio ? 1 : 0}>
         <AudioField src={sc.audio} onChange={(p) => set((x) => { if (p.src) x.audio = p.src; else delete x.audio; })} label="Enregistrement (facultatif)" hint="Sans enregistrement, le téléphone peut lire le texte avec une voix de synthèse." />
       </Collapse>
@@ -327,6 +332,17 @@ export function SceneForm({ id, onTestFrom, backTo, onBack }) {
       <Block n="→" title="Et ensuite ?" sub="Ce qui se passe après cette scène." tour="next">
         <NextEditor scene={sc} />
       </Block>
+
+      {sc.type !== 'end' && (
+        <Collapse title="Effets du téléphone" sub="capture, piratage, tempête de notifications, message fantôme, fissure, compte à rebours" icon="sparkles" count={(sc.effect ? 1 : 0) + (sc.countdown ? 1 : 0)}>
+          <EffectEditor where="scene" scene={sc} s={s} value={sc.effect} onChange={(e) => set((x) => { if (e) x.effect = e; else delete x.effect; }, `fx-${id}`)} />
+          {sc.choices?.length > 0 && (
+            <Field label="Compte à rebours pour décider" as="div" hint="L’élève sent que la situation évolue : à zéro, l’histoire choisit à sa place.">
+              <CountdownEditor value={sc.countdown} labels={sc.choices.map((c) => c.label)} onChange={(c) => set((x) => { if (c) x.countdown = JSON.parse(JSON.stringify(c)); else delete x.countdown; }, `cd-${id}`)} />
+            </Field>
+          )}
+        </Collapse>
+      )}
 
       {sc.type !== 'end' && (
         <Collapse title="Rythme et apparition" sub="délai, attendre que l’élève ouvre l’appli, notification" icon="clock" count={(sc.delay != null ? 1 : 0) + (sc.trigger === 'open' ? 1 : 0) + (sc.notify === false ? 1 : 0)}>

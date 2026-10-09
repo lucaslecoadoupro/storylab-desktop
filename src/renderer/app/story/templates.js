@@ -81,6 +81,67 @@ export const SKELETONS = [
   },
 ];
 
+/** Nombre de fins proposé pour une structure « sur mesure ». */
+export const ENDS_MIN = 2;
+export const ENDS_MAX = 10;
+const ORDINALS = ['Première', 'Deuxième', 'Troisième', 'Quatrième', 'Cinquième', 'Sixième', 'Septième', 'Huitième', 'Neuvième', 'Dixième'];
+
+/** Répartit n fins en au plus 3 chemins (A/B/C) aussi équilibrés que possible. */
+function split(n) {
+  const k = Math.min(3, n);
+  return Array.from({ length: k }, (_, i) => Math.floor(n / k) + (i < n % k ? 1 : 0));
+}
+
+/** Schéma (scènes par étage) d'une structure à n fins, pour la vignette. */
+export function shapeFor(n) {
+  const rows = [1, 1];
+  let frontier = [n];
+  while (frontier.some((x) => x > 1)) {
+    frontier = frontier.flatMap((x) => (x > 1 ? split(x) : [x]));
+    rows.push(frontier.length);
+  }
+  return rows;
+}
+
+/**
+ * Structure à remplir avec exactement `n` fins : un début, puis des décisions
+ * successives (au plus trois chemins par décision) jusqu'à obtenir n fins.
+ */
+export function buildWithEnds(title, n) {
+  n = Math.max(ENDS_MIN, Math.min(ENDS_MAX, Math.round(n) || ENDS_MIN));
+  const scenes = [];
+  let count = 0;
+  let endCount = 0;
+  const id = () => `s${++count}`;
+  scenes.push({ id: id(), type: 'narration', title: `${TODO}Début`, text: `${TODO}Présentez la situation de départ : où est l’élève, à quel moment, ce qui vient de se passer.` });
+  const first = { id: id(), type: 'message', app: 'papote', sender: 'ami', content: { type: 'text', text: `${TODO}Le premier message que reçoit l’élève.` } };
+  scenes[0].next = first.id;
+  scenes.push(first);
+  let decisions = 0;
+  // Construit la suite d'une scène qui doit mener à `ends` fins.
+  const grow = (from, ends) => {
+    if (ends === 1) {
+      const end = { id: id(), type: 'end', title: `${TODO}${ORDINALS[endCount] ?? `N° ${endCount + 1} :`} fin`, text: `${TODO}Ce que l’élève peut retenir de ce chemin.`, discuss: [`${TODO}Une question pour le débat en classe`] };
+      endCount++;
+      from.next = end.id;
+      scenes.push(end);
+      return;
+    }
+    decisions++;
+    const choice = { id: id(), type: 'choice', prompt: decisions === 1 ? 'Que fais-tu ?' : `${TODO}Nouvelle décision : que fais-tu ?`, choices: [] };
+    from.next = choice.id;
+    scenes.push(choice);
+    split(ends).forEach((sub, i) => {
+      const step = { id: id(), type: 'message', app: 'papote', sender: 'ami', content: { type: 'text', text: `${TODO}Ce qui arrive après la réaction ${'ABC'[i]}.` } };
+      choice.choices.push({ label: `${TODO}Réaction ${'ABC'[i]}`, next: step.id });
+      scenes.push(step);
+      grow(step, sub);
+    });
+  };
+  grow(first, n);
+  return base(title, scenes, { ami: { name: 'Camille' } });
+}
+
 export const EXAMPLE_META = {
   niveau: '5e',
   theme: 'image',

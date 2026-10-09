@@ -3,7 +3,7 @@ import { Icon } from '../icons.jsx';
 import { Field, Modal } from '../ui.jsx';
 import { newStoryRecord, useStore } from '../store.jsx';
 import { useNav } from '../nav.jsx';
-import { EXAMPLE_META, exampleStory, LEVELS, SKELETONS, THEMES } from '../story/templates.js';
+import { buildWithEnds, ENDS_MAX, ENDS_MIN, EXAMPLE_META, exampleStory, LEVELS, shapeFor, SKELETONS, THEMES } from '../story/templates.js';
 
 /** Petit schéma d'un squelette : nombre de scènes par « étage ». */
 function Shape({ shape }) {
@@ -30,10 +30,12 @@ export function NewStoryModal({ onClose }) {
   const [niveau, setNiveau] = useState('');
   const [theme, setTheme] = useState('');
   const [skeleton, setSkeleton] = useState('deux-fins');
+  const [ends, setEnds] = useState(4);
 
   const create = () => {
     const sk = SKELETONS.find((x) => x.id === skeleton);
-    const scenario = sk.build(title.trim() || 'Nouvelle histoire');
+    const name = title.trim() || 'Nouvelle histoire';
+    const scenario = skeleton === 'sur-mesure' ? buildWithEnds(name, ends) : sk.build(name);
     const characters = {};
     for (const id of Object.keys(scenario.contacts)) characters[id] = { kind: id === 'groupe' ? 'group' : 'person', role: id === 'groupe' ? 'Groupe de la classe' : '' };
     const rec = newStoryRecord(scenario, { niveau, theme, characters });
@@ -75,6 +77,18 @@ export function NewStoryModal({ onClose }) {
                 {skeleton === sk.id && <span className="sk-check"><Icon name="check" /></span>}
               </button>
             ))}
+            <div role="button" tabIndex={0} className={`skeleton ${skeleton === 'sur-mesure' ? 'on' : ''}`} onClick={() => setSkeleton('sur-mesure')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSkeleton('sur-mesure'); }}>
+              <Shape shape={shapeFor(ends)} />
+              <span className="sk-title">Sur mesure : {ends} fins</span>
+              <span className="sk-sub">Choisissez le nombre de fins : les décisions sont créées pour vous.</span>
+              <span className="row ends-stepper" onClick={(e) => e.stopPropagation()}>
+                <button type="button" className="btn btn-sm btn-icon" aria-label="Une fin de moins" disabled={ends <= ENDS_MIN} onClick={() => { setEnds(Math.max(ENDS_MIN, ends - 1)); setSkeleton('sur-mesure'); }}>−</button>
+                <input className="input" type="number" min={ENDS_MIN} max={ENDS_MAX} value={ends} aria-label="Nombre de fins" style={{ width: 64, textAlign: 'center' }}
+                  onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) setEnds(Math.max(ENDS_MIN, Math.min(ENDS_MAX, Math.round(v)))); setSkeleton('sur-mesure'); }} />
+                <button type="button" className="btn btn-sm btn-icon" aria-label="Une fin de plus" disabled={ends >= ENDS_MAX} onClick={() => { setEnds(Math.min(ENDS_MAX, ends + 1)); setSkeleton('sur-mesure'); }}>+</button>
+              </span>
+              {skeleton === 'sur-mesure' && <span className="sk-check"><Icon name="check" /></span>}
+            </div>
           </div>
         </div>
       )}

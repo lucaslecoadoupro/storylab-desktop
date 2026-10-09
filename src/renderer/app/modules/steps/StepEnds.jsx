@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Icon } from '../../icons.jsx';
-import { AutoText, Callout, Empty, Field } from '../../ui.jsx';
+import { AutoText, Callout, Empty, Field, useConfirm } from '../../ui.jsx';
 import { useStory } from '../../store.jsx';
-import { byId, outline, reachable, sceneNumber } from '../../story/model.js';
+import { addEnd, byId, endAnchors, outline, reachable, removeEnd, sceneNumber, summary } from '../../story/model.js';
+import { MinReadField } from '../editor/MinReadField.jsx';
 import { TodoText } from '../editor/media.jsx';
 import { plural } from '../../utils.js';
 
@@ -42,6 +43,18 @@ export function StepEnds({ uid, onOpenScene }) {
   const dead = useMemo(() => deadEnds(s), [s]);
   const ends = s.scenes.filter((sc) => sc.type === 'end');
   const setEnd = (id, fn, key) => edit((st) => fn(byId(st.scenario, id)), key);
+  const confirm = useConfirm();
+  const anchors = useMemo(() => endAnchors(s).filter((sc) => reach.has(sc.id)), [s, reach]);
+  // Par défaut : la dernière décision de l'histoire.
+  const defaultAnchor = [...anchors].reverse().find((sc) => sc.choices?.length)?.id || anchors[anchors.length - 1]?.id || '';
+  const [anchor, setAnchor] = useState('');
+  const from = anchors.some((a) => a.id === anchor) ? anchor : defaultAnchor;
+  const short = (t) => (t.length > 60 ? `${t.slice(0, 60)}…` : t);
+  const add = () => { if (from) edit((st) => { addEnd(st.scenario, from); }); };
+  const remove = async (e) => {
+    const ok = await confirm({ title: 'Supprimer cette fin ?', danger: true, confirmLabel: 'Supprimer', message: `« ${e.title || 'Fin'} » sera retirée. Les choix qui y menaient disparaissent (ou restent à compléter s’il n’en resterait qu’un).` });
+    if (ok) edit((st) => { removeEnd(st.scenario, e.id); });
+  };
 
   return (
     <div className="step-grid">
@@ -52,6 +65,21 @@ export function StepEnds({ uid, onOpenScene }) {
             <div className="row-wrap mt-1">{dead.map((d, i) => <button key={i} className="btn btn-sm" onClick={() => onOpenScene(d.from)}>Voir la scène n° {sceneNumber(d.from)}</button>)}</div>
           </Callout>
         )}
+        <div className="card">
+          <div className="card-hd">
+            <div className="card-title"><Icon name="flag" />{plural(ends.length, 'fin')} dans l’histoire</div>
+          </div>
+          <div className="card-body">
+            <div className="row-wrap" style={{ alignItems: 'flex-end', gap: '.6rem' }}>
+              <Field label="Ajouter une fin qui part de…" hint="Un nouveau choix est ajouté à cette scène : il mène à la nouvelle fin." style={{ flex: 1, minWidth: 260 }}>
+                <select className="select" value={from} onChange={(ev) => setAnchor(ev.target.value)}>
+                  {anchors.map((sc) => <option key={sc.id} value={sc.id}>n° {sceneNumber(sc.id)} · {short(summary(sc, s))}{sc.choices?.length ? ` (${sc.choices.length} choix)` : ''}</option>)}
+                </select>
+              </Field>
+              <button className="btn btn-primary" disabled={!from} onClick={add}><Icon name="plus" />Ajouter une fin</button>
+            </div>
+          </div>
+        </div>
         {ends.length === 0 ? (
           <div className="card"><Empty icon="flag" title="Aucune fin pour l’instant" sub="Dans l’étape Scènes, terminez chaque chemin par une scène « Fin »." /></div>
         ) : ends.map((e, i) => (
@@ -61,11 +89,13 @@ export function StepEnds({ uid, onOpenScene }) {
               <div className="row">
                 <span className="pill">{reach.has(e.id) ? plural(counts.get(e.id) || 0, 'parcours y mène', 'parcours y mènent') : 'non reliée'}</span>
                 <button className="btn btn-sm btn-quiet" onClick={() => onOpenScene(e.id)}><Icon name="route" />Voir dans le plan</button>
+                {ends.length > 1 && <button className="btn btn-sm btn-quiet btn-icon" onClick={() => remove(e)} aria-label="Supprimer cette fin" title="Supprimer cette fin"><Icon name="trash" /></button>}
               </div>
             </div>
             <div className="card-body stack">
               <Field label="Titre" required><TodoText value={e.title} onChange={(v) => setEnd(e.id, (x) => { x.title = v; }, `et-${e.id}`)} placeholder="Ex. Le silence" /></Field>
               <Field label="Texte de fin" hint="Laissez une ligne vide entre deux paragraphes."><TodoText multiline minRows={3} value={e.text} onChange={(v) => setEnd(e.id, (x) => { x.text = v; }, `ex-${e.id}`)} placeholder="Ce que l’élève peut retenir de ce chemin." /></Field>
+              <MinReadField value={e.minRead} onChange={(v) => setEnd(e.id, (x) => { if (v) x.minRead = v; else delete x.minRead; }, `emr-${e.id}`)} />
               <Field label="Questions pour le débat" as="div">
                 <div className="lines">
                   {(e.discuss || []).map((q, j) => (

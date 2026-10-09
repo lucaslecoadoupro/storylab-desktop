@@ -406,3 +406,44 @@ export function clean(s) {
   if (!out.contacts) out.contacts = {};
   return out;
 }
+
+// ── Fins : en ajouter, en retirer ───────────────────────────────────────────
+
+/** Scènes d'où peut partir une nouvelle fin (toute scène sauf une fin ou une notification). */
+export const endAnchors = (s) => s.scenes.filter((sc) => sc.type !== 'end' && sc.type !== 'notification');
+
+/**
+ * Ajoute une fin qui part de la scène `fromId` : un nouveau choix (le chemin
+ * existant devient le choix A, la nouvelle fin le choix suivant).
+ * Renvoie l'identifiant de la nouvelle fin.
+ */
+export function addEnd(s, fromId, label = '✏️ Nouvelle réaction possible') {
+  const from = byId(s, fromId);
+  if (!from || from.type === 'end') return null;
+  const end = { id: newId(s), type: 'end', title: '✏️ Nouvelle fin', text: '✏️ Ce que l’élève peut retenir de ce chemin.', discuss: ['✏️ Une question pour le débat en classe'] };
+  if (!from.choices?.length) {
+    from.choices = [{ label: from.type === 'narration' ? 'Continuer' : '✏️ Réaction possible', next: from.next || '' }];
+    delete from.next;
+  }
+  from.choices.push({ label, next: end.id });
+  // Rangée après les autres scènes : elle apparaît en dernier dans la liste des fins.
+  s.scenes.push(end);
+  return end.id;
+}
+
+/**
+ * Retire une fin : les choix qui y menaient disparaissent (s'il reste au moins
+ * deux choix), sinon le chemin reste à compléter (signalé « sans fin »).
+ */
+export function removeEnd(s, endId) {
+  for (const sc of s.scenes) {
+    if (sc.next === endId) delete sc.next;
+    for (let i = (sc.choices?.length || 0) - 1; i >= 0; i--) {
+      if (sc.choices[i].next !== endId) continue;
+      if (sc.choices.length > 2) sc.choices.splice(i, 1);
+      else sc.choices[i].next = '';
+    }
+  }
+  s.scenes = s.scenes.filter((x) => x.id !== endId);
+  if (s.start === endId) s.start = s.scenes[0]?.id || '';
+}

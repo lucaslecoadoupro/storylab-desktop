@@ -17,9 +17,10 @@ Un·e enseignant·e conçoit son scénario pédagogique pas à pas, le teste dan
 
 - **Tous les types de scènes du moteur** : message (texte, photo, message vocal, réactions), publication (Pixa, check-in Clan, commentaires, « J'aime »), story, notification, photo reçue, appel (sonnerie ou sous-titré, Téléphone ou Papote), récit (avec dialogue), choix du héros, fin.
 - **Tous les effets des choix** : répondre autre chose ou rien, réagir avec un emoji, transférer, capture d'écran, « J'aime » +/−, éteindre le téléphone, ouvrir une appli ou une conversation.
-- **Réglages fins** : délai, attente que l'élève ouvre l'appli, notification, pastille réduite.
+- **Réglages fins** : délai, attente que l'élève ouvre l'appli, notification, pastille réduite ; fin qui attend que l'élève ait lu X messages.
+- **Effets du téléphone** : capture d'écran, piratage, tempête de notifications, message fantôme, écran fissuré, téléphone figé, compte à rebours sur une décision.
 - **Médias** : images compressées en WebP (1 080 px), sons enregistrés au micro (1 min 30) ou importés (1,5 Mo), description obligatoire des images, transcription des vocaux.
-- **Départ guidé** : structures prêtes à remplir (« une décision, deux fins », « deux décisions, trois fins », page blanche) ; les textes d'exemple ✏️ sont surlignés et doivent être réécrits avant l'envoi.
+- **Départ guidé** : structures prêtes à remplir (« une décision, deux fins », « deux décisions, trois fins », page blanche, ou **sur mesure : 2 à 10 fins**) ; à l'étape « Fins & débat », **Ajouter une fin** depuis n'importe quelle scène, ou en supprimer une ; les textes d'exemple ✏️ sont surlignés et doivent être réécrits avant l'envoi.
 - **Histoire d'exemple complète** (« La photo de trop »), modifiable sans risque.
 - **Didacticiel** : écran de bienvenue au premier lancement, visite guidée complète (12 étapes), mini-visites à la première ouverture de l'éditeur, du test et de l'envoi, bulles « ? » sur les champs, conseils contextuels par type de scène, Guide de l'auteur intégré.
 - Annuler / rétablir (Ctrl+Z / Ctrl+Y), vue d'ensemble en carte, duplication, copies `.declic` pour travailler à deux, thème sombre.
@@ -50,6 +51,8 @@ Le script construit le téléphone, le copie dans `phone/`, et recopie le format
 ## Côté équipe (StoryLab)
 
 Le panneau `/admin` de Déclic accepte les fichiers `.declic` dans « Importer (Excel, Word, StoryLab)… » : l'histoire s'ouvre dans l'éditeur, avec la fiche de l'enseignant (auteur, objectifs, déroulé, message) dans « Remarques sur le fichier importé ». Voir `src/admin/import/studio.ts` dans StoryLab.
+
+Le panneau `/admin` exporte aussi n'importe quelle histoire en `.declic` (bouton « ⬇ .declic ») : elle se rouvre ici pour être modifiée.
 
 ## Réglages à adapter
 
